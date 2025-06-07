@@ -1,0 +1,257 @@
+[
+    {
+        "id": "8a154e6c0ffae01b",
+        "type": "tab",
+        "label": "Fluxo 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "9e5216f29683d1d4",
+        "type": "inject",
+        "z": "8a154e6c0ffae01b",
+        "name": "15 minute update (current weather)",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "900",
+        "crontab": "",
+        "once": true,
+        "onceDelay": "15",
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 210,
+        "y": 100,
+        "wires": [
+            [
+                "fa5710ecfa14b569"
+            ]
+        ]
+    },
+    {
+        "id": "fa5710ecfa14b569",
+        "type": "http request",
+        "z": "8a154e6c0ffae01b",
+        "name": "",
+        "method": "GET",
+        "ret": "obj",
+        "paytoqs": "ignore",
+        "url": "https://api.open-meteo.com/v1/forecast?latitude=-24.2952&longitude=-53.8477&current=temperature_2m,precipitation,relative_humidity_2m,rain,apparent_temperature,is_day,wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=America%2FSao_Paulo&forecast_days=1",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 480,
+        "y": 100,
+        "wires": [
+            [
+                "713d4b47659a04d5"
+            ]
+        ]
+    },
+    {
+        "id": "55e1f6672f33f364",
+        "type": "debug",
+        "z": "8a154e6c0ffae01b",
+        "name": "debug 11",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1040,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "713d4b47659a04d5",
+        "type": "function",
+        "z": "8a154e6c0ffae01b",
+        "name": "formatar dados",
+        "func": "const c = msg.payload.current;\n\nconst sql = `\nINSERT INTO weather (\n  data_hora, temperatura, precipitacao, umidade, chuva,\n  sensacao_termica, e_dia, vento_velocidade, vento_direcao, vento_rajada\n) VALUES (\n  '${c.time}',\n  ${c.temperature_2m},\n  ${c.precipitation},\n  ${c.relative_humidity_2m},\n  ${c.rain},\n  ${c.apparent_temperature},\n  ${c.is_day},\n  ${c.wind_speed_10m},\n  ${c.wind_direction_10m},\n  ${c.wind_gusts_10m}\n);\n`;\n\nmsg.topic = sql;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 680,
+        "y": 100,
+        "wires": [
+            [
+                "449436efd1401837"
+            ]
+        ]
+    },
+    {
+        "id": "449436efd1401837",
+        "type": "sqlite",
+        "z": "8a154e6c0ffae01b",
+        "mydb": "6366e6c93cbca01c",
+        "sqlquery": "msg.topic",
+        "sql": "",
+        "name": "gravar dados",
+        "x": 870,
+        "y": 100,
+        "wires": [
+            [
+                "55e1f6672f33f364"
+            ]
+        ]
+    },
+    {
+        "id": "efb595672529a65a",
+        "type": "inject",
+        "z": "8a154e6c0ffae01b",
+        "name": "A cada 15 minutos",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "900",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 150,
+        "y": 240,
+        "wires": [
+            [
+                "1780ae4aa14f3962"
+            ]
+        ]
+    },
+    {
+        "id": "1780ae4aa14f3962",
+        "type": "sqlite",
+        "z": "8a154e6c0ffae01b",
+        "mydb": "6366e6c93cbca01c",
+        "sqlquery": "fixed",
+        "sql": "SELECT id, data_hora, chuva FROM weather WHERE date(data_hora) = date('now') ORDER BY id DESC LIMIT 4",
+        "name": "Consultar últimos 4 registros",
+        "x": 400,
+        "y": 240,
+        "wires": [
+            [
+                "bd9dacca25bb51bf",
+                "29f597fd220bf572"
+            ]
+        ]
+    },
+    {
+        "id": "bd9dacca25bb51bf",
+        "type": "sqlite",
+        "z": "8a154e6c0ffae01b",
+        "mydb": "6366e6c93cbca01c",
+        "sqlquery": "fixed",
+        "sql": "SELECT SUM(chuva) AS total_chuva_hoje FROM weather WHERE DATE(data_hora) = DATE('now', 'localtime')",
+        "name": "Calcular acumulado diário",
+        "x": 670,
+        "y": 300,
+        "wires": [
+            [
+                "b17fce550ffa9fc5"
+            ]
+        ]
+    },
+    {
+        "id": "b17fce550ffa9fc5",
+        "type": "function",
+        "z": "8a154e6c0ffae01b",
+        "name": "Armazenar total diário - informação para o email",
+        "func": "let total = 0;\nif (msg.payload && Array.isArray(msg.payload) && msg.payload[0] && msg.payload[0].total_chuva_hoje) {\n    total = parseFloat(msg.payload[0].total_chuva_hoje) || 0;\n}\nglobal.set('dailyRainTotal', total);\nreturn null;",
+        "outputs": 0,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1100,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "29f597fd220bf572",
+        "type": "function",
+        "z": "8a154e6c0ffae01b",
+        "name": "Função para criar um alerta",
+        "func": "function formatDate() {\n    return new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });\n}\n\nfunction calculateTotalRain(payload) {\n    return payload.reduce((sum, row) => sum + parseFloat(row.chuva || 0), 0);\n}\n\nfunction getDailyRainTotal() {\n    return global.get('dailyRainTotal') || 0;\n}\n\nfunction formatEmailText(totalRain, date) {\n    return `Relatório de Chuva\nPrezado(a),\n\nHoje, ${date}, registramos uma precipitação acumulada neste dia de ${totalRain.toFixed(2).replace('.', ',')} mm até o momento. Informamos que detectamos chuva na última hora.\n\nCaso tenha alguma dúvida, estamos à disposição.\n\nAtenciosamente,\nEquipe de Monitoramento`;\n}\n\nif (msg.payload && Array.isArray(msg.payload)) {\n    const hourlyRain = calculateTotalRain(msg.payload);\n    if (hourlyRain > 0) {\n        const date = formatDate();\n        \n        msg.topic = `Relatório de Chuva - ${date}`;\n        msg.from = 'brunocorisco@gmail.com';\n        msg.to = 'bconter@outlook.com';\n        \n        const dailyRainTotal = getDailyRainTotal();\n        msg.text = `Relatório de Chuva\nPrezado(a),\n\nHoje, ${date}, registramos uma precipitação acumulada neste dia de ${dailyRainTotal.toFixed(2).replace('.', ',')} mm até o momento. Informamos que detectamos chuva na última hora.\n\nCaso tenha alguma dúvida, estamos à disposição.\n\nAtenciosamente,\nEquipe de Monitoramento`;\n        \n        msg.payload = msg.text;\n        return msg;\n    }\n}\nreturn null;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 920,
+        "y": 240,
+        "wires": [
+            [
+                "8ff6c86d0ed5224c"
+            ]
+        ]
+    },
+    {
+        "id": "8ff6c86d0ed5224c",
+        "type": "e-mail",
+        "z": "8a154e6c0ffae01b",
+        "server": "smtp.gmail.com",
+        "port": "465",
+        "authtype": "BASIC",
+        "saslformat": true,
+        "token": "oauth2Response.access_token",
+        "secure": true,
+        "tls": true,
+        "name": "bconter@outlook.com",
+        "dname": "Enviar um E-mail",
+        "x": 1230,
+        "y": 240,
+        "wires": []
+    },
+    {
+        "id": "dcc283ea1dac504c",
+        "type": "comment",
+        "z": "8a154e6c0ffae01b",
+        "name": "A cada 15 minutos uma requisição ao OpenMeteo - Grava os dados em uma base SQLite",
+        "info": "",
+        "x": 710,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "25cdf06681626f60",
+        "type": "comment",
+        "z": "8a154e6c0ffae01b",
+        "name": "A cada 15 minutos uma consulta para ver os 4 ultimos registros e fazer um alerta",
+        "info": "",
+        "x": 660,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "6366e6c93cbca01c",
+        "type": "sqlitedb",
+        "db": "/home/nodered/weather/weather.db",
+        "mode": "RW"
+    }
+]
