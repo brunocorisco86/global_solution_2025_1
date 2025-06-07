@@ -24,7 +24,17 @@
 
 ## 📜 Descrição
 
-*Descreva seu projeto com base no texto do PBL (até 600 palavras)*
+This project focuses on developing a flood risk prediction system using machine learning techniques. It analyzes historical meteorological data for Bom Retiro do Sul, SC, to identify patterns and conditions that typically precede flood events.
+
+The core of the project lies in a Jupyter Notebook (`analise_alagamentos_modelo.ipynb`) where data analysis, model training, and evaluation are performed. Meteorological data, sourced from the Open-Meteo API via a dedicated Python script (`scripts/extrator_base_de_dados.py`), covers the period from February 1, 2024, to June 30, 2024. This dataset includes a comprehensive range of hourly variables such as precipitation, temperature at various heights, wind speed and direction at different altitudes, soil temperature and moisture at multiple depths, relative humidity, cloud cover, and surface pressure.
+
+Data preprocessing steps include handling missing values using forward fill and converting date information appropriately for time-series analysis. A key aspect of the project is the definition of a synthetic target variable, `flood_risk`. This binary variable is triggered (set to 1) when hourly precipitation exceeds 5mm and soil moisture at 0-1cm depth surpasses 0.35; otherwise, it is 0. While this provides a working definition for model training, it's acknowledged that the dataset is imbalanced, with far fewer "flood risk" instances.
+
+Exploratory Data Analysis (EDA) is conducted to visualize trends in precipitation and soil moisture, including a detailed look at a specific potential flood period between April 28 and May 2, 2024. Correlations between various features and the synthetic flood risk are also examined, with precipitation showing a strong positive correlation.
+
+For model training, a selection of features (`precipitation`, `soil_moisture_0_to_1cm`, `soil_moisture_1_to_3cm`, `relative_humidity_2m`, `surface_pressure`, `cloud_cover`) are chosen and scaled using `StandardScaler`. A Random Forest Classifier is then trained on this data, split into 80% training and 20% testing sets (stratified due to class imbalance). The model's performance is evaluated using a classification report and confusion matrix, and feature importance is also derived from the classifier.
+
+The project also outlines a conceptual framework for an alert system, suggesting that the trained model could be used to predict flood probability on new data. Alerts could then be triggered if this probability surpasses a predefined threshold, potentially integrating with messaging services for real-time notifications. Future work could involve refining the target variable with actual flood event data and exploring other machine learning models.
 
 
 ## 📁 Estrutura de pastas
